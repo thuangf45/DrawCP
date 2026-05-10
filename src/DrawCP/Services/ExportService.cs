@@ -8,11 +8,45 @@ public static class ExportService
 {
     public static void ExportToPng(Stream targetStream, List<ShapeModel> shapes, double width, double height)
     {
-        // Tạo ảnh với kích thước của Canvas
-        var info = new SKImageInfo((int)width, (int)height);
+        if (shapes == null || shapes.Count == 0) return;
+
+        // 1. Tính toán Bounding Box bao quát toàn bộ shapes
+        float minX = float.MaxValue;
+        float minY = float.MaxValue;
+        float maxX = float.MinValue;
+        float maxY = float.MinValue;
+
+        foreach (var s in shapes)
+        {
+            var bounds = s.GetBounds(); // Lấy RectF của shape
+            float halfStroke = s.StrokeThickness / 2;
+
+            // Tính toán khung bao có tính đến độ dày viền
+            minX = Math.Min(minX, bounds.Left - halfStroke);
+            minY = Math.Min(minY, bounds.Top - halfStroke);
+            maxX = Math.Max(maxX, bounds.Right + halfStroke);
+            maxY = Math.Max(maxY, bounds.Bottom + halfStroke);
+        }
+
+        // Thêm một khoảng đệm (padding) nhỏ 5px để không bị sát mép quá
+        float padding = 5;
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+
+        float finalWidth = maxX - minX;
+        float finalHeight = maxY - minY;
+
+        // 2. Tạo ảnh với kích thước vừa khít
+        var info = new SKImageInfo((int)finalWidth, (int)finalHeight);
         using var surface = SKSurface.Create(info);
         var canvas = surface.Canvas;
-        canvas.Clear(SKColors.White); // Nền trắng
+        canvas.Clear(SKColors.White);
+
+        // 3. QUAN TRỌNG: Dời tọa độ canvas để hình vẽ khớp vào ảnh mới
+        // Vì shapes có tọa độ gốc dựa trên paper, ta phải trừ đi minX, minY
+        canvas.Translate(-minX, -minY);
 
         foreach (var shape in shapes)
         {
@@ -20,12 +54,11 @@ public static class ExportService
             {
                 IsAntialias = true,
                 StrokeWidth = shape.StrokeThickness,
-                Color = shape.StrokeColor.ToSKColor()
             };
 
             var rect = new SKRect(shape.X, shape.Y, shape.X + shape.Width, shape.Y + shape.Height);
 
-            // Vẽ Fill (nếu có)
+            // Vẽ Fill
             if (shape.FillColor != Colors.Transparent)
             {
                 paint.Style = SKPaintStyle.Fill;
@@ -58,6 +91,11 @@ public static class ExportService
                 break;
             case MyShapeType.Line:
                 canvas.DrawLine(shape.X, shape.Y, shape.X + shape.Width, shape.Y + shape.Height, paint);
+                break;
+            case MyShapeType.Point:
+                // Vẽ điểm dựa trên StrokeThickness
+                float radius = 1 + (shape.StrokeThickness / 2);
+                canvas.DrawCircle(shape.X, shape.Y, radius, paint);
                 break;
         }
     }

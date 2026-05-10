@@ -6,12 +6,10 @@
              Title="Lucifer Drawing Pro">
 
     <ContentPage.Resources>
-        <!-- Màu sắc chủ đạo -->
         <Color x:Key="PrimaryDark">#1A1A1B</Color>
         <Color x:Key="AccentBlue">#007AFF</Color>
         <Color x:Key="SurfaceLight">#FFFFFF</Color>
 
-        <!-- Style cho các nút công cụ -->
         <Style x:Key="ToolBtn" TargetType="Button">
             <Setter Property="BackgroundColor" Value="Transparent"/>
             <Setter Property="TextColor" Value="#333333"/>
@@ -20,10 +18,8 @@
             <Setter Property="FontAttributes" Value="Bold"/>
             <Setter Property="HeightRequest" Value="40"/>
             <Setter Property="Padding" Value="5,0"/>
-            <Setter Property="Visual" Value="Default"/>
         </Style>
 
-        <!-- Border cho các nhóm Tool -->
         <Style x:Key="GroupBorder" TargetType="Border">
             <Setter Property="Stroke" Value="#E0E0E0"/>
             <Setter Property="StrokeThickness" Value="1"/>
@@ -39,13 +35,9 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, *" BackgroundColor="#F5F5F7">
-
         <Border Grid.Row="0" Margin="10" Style="{StaticResource GroupBorder}">
             <ScrollView Orientation="Vertical">
-                <FlexLayout Wrap="Wrap" 
-                        JustifyContent="Start" 
-                        AlignItems="Center" 
-                        Direction="Row">
+                <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center" Direction="Row">
 
                     <HorizontalStackLayout Spacing="2" Margin="5">
                         <Button Text="Select" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Select" WidthRequest="60"/>
@@ -68,7 +60,7 @@
                     <BoxView WidthRequest="1" HeightRequest="30" BackgroundColor="#D1D1D6" Margin="5"/>
 
                     <HorizontalStackLayout Spacing="5" Margin="5">
-                        <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" WidthRequest="80"/>
+                        <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" WidthRequest="80" ValueChanged="OnThicknessChanged"/>
                         <Border StrokeShape="RoundRectangle 15" HeightRequest="30" WidthRequest="30">
                             <BoxView x:Name="ColorPreview" Color="Black">
                                 <BoxView.GestureRecognizers>
@@ -89,21 +81,14 @@
                 </FlexLayout>
             </ScrollView>
         </Border>
+
         <Grid Grid.Row="1" Margin="10" BackgroundColor="White" IsClippedToBounds="True">
-            <ContentView x:Name="CanvasContainer" 
-                 HorizontalOptions="Start" 
-                 VerticalOptions="Start"
-                 AnchorX="0" 
-                 AnchorY="0">
+            <ContentView x:Name="CanvasContainer" HorizontalOptions="Start" VerticalOptions="Start" AnchorX="0" AnchorY="0">
                 <ContentView.GestureRecognizers>
                     <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
                 </ContentView.GestureRecognizers>
-
-                <GraphicsView x:Name="CanvasView" 
-                      BackgroundColor="White"
-                      StartInteraction="OnCanvasStart"
-                      DragInteraction="OnCanvasDrag"
-                      EndInteraction="OnCanvasEnd"/>
+                <GraphicsView x:Name="CanvasView" BackgroundColor="White"
+                              StartInteraction="OnCanvasStart" DragInteraction="OnCanvasDrag" EndInteraction="OnCanvasEnd"/>
             </ContentView>
         </Grid>
     </Grid>
