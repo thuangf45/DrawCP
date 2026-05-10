@@ -1,6 +1,15 @@
 ﻿namespace DrawCP.Models;
 
-public enum MyShapeType { Point, Line, Rectangle, Ellipse, Square, Circle }
+public enum MyShapeType
+{
+    Select, // Thêm Select làm giá trị 0
+    Point,
+    Line,
+    Rectangle,
+    Ellipse,
+    Square,
+    Circle
+}
 
 public class ShapeModel
 {

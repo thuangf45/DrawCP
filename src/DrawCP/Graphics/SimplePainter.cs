@@ -39,7 +39,9 @@ public class SimplePainter : IDrawable
         switch (shape.Type)
         {
             case MyShapeType.Point:
-                canvas.FillCircle(shape.X, shape.Y, shape.StrokeThickness);
+                // Dùng StrokeColor để vẽ điểm và tăng kích thước lên 5 cho dễ thấy
+                canvas.FillColor = shape.StrokeColor;
+                canvas.FillCircle(shape.X, shape.Y, 1 + (shape.StrokeThickness / 2));
                 break;
             case MyShapeType.Line:
                 canvas.DrawLine(shape.X, shape.Y, shape.X + shape.Width, shape.Y + shape.Height);

@@ -8,7 +8,7 @@ public partial class MainPage : ContentPage
 {
     private SimplePainter _painter = new();
     private MyShapeType _currentTool = MyShapeType.Line;
-    private ShapeModel? _selectedShape; // .NET 9 Nullable
+    private ShapeModel? _selectedShape;
     private List<List<ShapeModel>> _undoStack = new();
 
     private bool _isMoving = false;
@@ -18,12 +18,21 @@ public partial class MainPage : ContentPage
     double _currentScale = 1;
     double _startScale = 1;
 
+    // Danh sách quản lý các nút công cụ để Highlight
+    private List<Button> _toolButtons = new();
+
     public MainPage()
     {
         InitializeComponent();
         CanvasView.Drawable = _painter;
 
-        this.Appearing += (s, e) => UpdateCanvasSize();
+        // Đăng ký sự kiện khi trang xuất hiện
+        this.Appearing += (s, e) =>
+        {
+            CollectToolButtons(this); // Tự động tìm tất cả nút công cụ
+            UpdateCanvasSize();
+            UpdateToolbarVisuals(); // Highlight nút mặc định ban đầu
+        };
 
 #if WINDOWS
         CanvasView.HandlerChanged += (s, e) =>
@@ -35,6 +44,52 @@ public partial class MainPage : ContentPage
             }
         };
 #endif
+    }
+
+    /// <summary>
+    /// Đệ quy tìm tất cả Button có CommandParameter là MyShapeType trong Layout
+    /// </summary>
+    private void CollectToolButtons(Element parent)
+    {
+        // Duyệt qua danh sách logic children
+        foreach (var item in parent.LogicalChildren)
+        {
+            if (item is Button btn && btn.CommandParameter != null)
+            {
+                // Kiểm tra xem nút này có phải là nút chọn công cụ vẽ không
+                if (Enum.IsDefined(typeof(MyShapeType), btn.CommandParameter.ToString()))
+                {
+                    if (!_toolButtons.Contains(btn))
+                        _toolButtons.Add(btn);
+                }
+            }
+
+            // Nếu item là một layout hoặc view container, tiếp tục đào sâu xuống
+            if (item is Element visualElement)
+            {
+                CollectToolButtons(visualElement);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cập nhật màu sắc cho các nút: Xanh cho nút đang chọn, Trong suốt cho còn lại
+    /// </summary>
+    private void UpdateToolbarVisuals()
+    {
+        foreach (var btn in _toolButtons)
+        {
+            if (btn.CommandParameter?.ToString() == _currentTool.ToString())
+            {
+                btn.BackgroundColor = Color.FromArgb("#007AFF"); // AccentBlue
+                btn.TextColor = Colors.White;
+            }
+            else
+            {
+                btn.BackgroundColor = Colors.Transparent;
+                btn.TextColor = Color.FromArgb("#333333");
+            }
+        }
     }
 
     private void SaveState()
@@ -58,21 +113,32 @@ public partial class MainPage : ContentPage
     private void OnCanvasStart(object sender, TouchEventArgs e)
     {
         _lastMousePos = e.Touches[0];
-        var hit = _painter.Shapes.AsEnumerable().Reverse().FirstOrDefault(s => s.GetBounds().Contains(_lastMousePos));
 
-        if (hit != null && _currentTool == MyShapeType.Point)
+        if (_currentTool == MyShapeType.Select)
         {
-            if (_selectedShape != null) _selectedShape.IsSelected = false;
-            _selectedShape = hit;
-            _selectedShape.IsSelected = true;
-            _isMoving = true;
-            ThicknessSlider.Value = _selectedShape.StrokeThickness;
-            ColorPreview.Color = _selectedShape.StrokeColor;
+            var hit = _painter.Shapes.AsEnumerable().Reverse().FirstOrDefault(s => s.GetBounds().Contains(_lastMousePos));
+
+            if (hit != null)
+            {
+                if (_selectedShape != null) _selectedShape.IsSelected = false;
+                _selectedShape = hit;
+                _selectedShape.IsSelected = true;
+                _isMoving = true;
+
+                UpdateUIFromSelected();
+            }
+            else
+            {
+                if (_selectedShape != null) _selectedShape.IsSelected = false;
+                _selectedShape = null;
+            }
         }
         else
         {
+            // Logic vẽ hình mới
             if (_selectedShape != null) _selectedShape.IsSelected = false;
             _selectedShape = null;
+
             _painter.CurrentPreviewShape = new ShapeModel
             {
                 Type = _currentTool,
@@ -81,29 +147,14 @@ public partial class MainPage : ContentPage
                 StrokeColor = ColorPreview.Color,
                 StrokeThickness = (float)ThicknessSlider.Value
             };
-        }
-        CanvasView.Invalidate();
-    }
 
-    // 1. Xóa bỏ logic Panning thủ công trong OnCanvasDrag để tránh xung đột với ScrollView
-    private void OnCanvasDrag(object sender, TouchEventArgs e)
-    {
-        var currentPoint = e.Touches[0];
-
-        if (_isMoving && _selectedShape != null)
-        {
-            _selectedShape.X += currentPoint.X - _lastMousePos.X;
-            _selectedShape.Y += currentPoint.Y - _lastMousePos.Y;
-            _lastMousePos = currentPoint;
-        }
-        // Xóa đoạn TranslationX/Y ở đây vì ScrollView sẽ xử lý việc vuốt để cuộn
-        else if (_painter.CurrentPreviewShape != null)
-        {
-            _painter.CurrentPreviewShape.Width = currentPoint.X - _painter.CurrentPreviewShape.X;
-            _painter.CurrentPreviewShape.Height = currentPoint.Y - _painter.CurrentPreviewShape.Y;
-
-            if (_currentTool == MyShapeType.Square || _currentTool == MyShapeType.Circle)
-                _painter.CurrentPreviewShape.Height = _painter.CurrentPreviewShape.Width;
+            // Nếu là Point thì vẽ ngay lập tức không cần Drag
+            if (_currentTool == MyShapeType.Point)
+            {
+                _painter.Shapes.Add(_painter.CurrentPreviewShape);
+                _painter.CurrentPreviewShape = null;
+                SaveState();
+            }
         }
         CanvasView.Invalidate();
     }
@@ -115,25 +166,55 @@ public partial class MainPage : ContentPage
             SaveState();
             _painter.Shapes.Add(_painter.CurrentPreviewShape);
             _painter.CurrentPreviewShape = null;
-
-            // Vẽ xong hình mới -> Kiểm tra xem có cần nới rộng tờ giấy không
             UpdateCanvasSize();
         }
         _isMoving = false;
         CanvasView.Invalidate();
     }
 
-    private void OnToolSelected(object sender, EventArgs e) =>
-        _currentTool = Enum.Parse<MyShapeType>((sender as Button).CommandParameter.ToString());
+    private void OnToolSelected(object sender, EventArgs e)
+    {
+        if (sender is Button btn && btn.CommandParameter != null)
+        {
+            if (Enum.TryParse(btn.CommandParameter.ToString(), out MyShapeType selectedType))
+            {
+                _currentTool = selectedType;
+                UpdateToolbarVisuals();
+            }
+        }
+    }
+
+    private void UpdateUIFromSelected()
+    {
+        if (_selectedShape == null) return;
+
+        ThicknessSlider.Value = _selectedShape.StrokeThickness;
+        ColorPreview.Color = _selectedShape.StrokeColor;
+    }
 
     private async void OnColorPickerTapped(object sender, TappedEventArgs e)
     {
-        string res = await DisplayActionSheet("Màu sắc", "Hủy", null, "Black", "Red", "Blue", "Green", "Orange", "Purple");
+        string res = await DisplayActionSheet("Chọn màu sắc", "Hủy", null, "Black", "Red", "Blue", "Green", "Orange", "Purple");
         if (res != "Hủy" && res != null)
         {
-            Color selected = res switch { "Red" => Colors.Red, "Blue" => Colors.Blue, "Green" => Colors.Green, "Orange" => Colors.Orange, "Purple" => Colors.Purple, _ => Colors.Black };
+            Color selected = res switch
+            {
+                "Red" => Colors.Red,
+                "Blue" => Colors.Blue,
+                "Green" => Colors.Green,
+                "Orange" => Colors.Orange,
+                "Purple" => Colors.Purple,
+                _ => Colors.Black
+            };
+
             ColorPreview.Color = selected;
-            if (_selectedShape != null) { _selectedShape.StrokeColor = selected; CanvasView.Invalidate(); }
+
+            if (_selectedShape != null)
+            {
+                SaveState();
+                _selectedShape.StrokeColor = selected;
+                CanvasView.Invalidate();
+            }
         }
     }
 
@@ -143,11 +224,8 @@ public partial class MainPage : ContentPage
         {
             string fileName = $"drawing_{DateTime.Now:yyyyMMdd_HHmmss}.bin";
             string path = Path.Combine(FileSystem.AppDataDirectory, fileName);
-
-            // Đảm bảo đóng file sau khi ghi
             BinaryService.Save(path, _painter.Shapes);
-
-            await DisplayAlert("Thành công", $"Đã lưu: {fileName}", "OK");
+            await DisplayAlert("Thành công", $"Đã lưu dữ liệu: {fileName}", "OK");
         }
         catch (Exception ex)
         {
@@ -162,8 +240,6 @@ public partial class MainPage : ContentPage
         {
             _painter.Shapes = BinaryService.Load(result.FullPath);
             _selectedShape = null;
-
-            // Load xong -> Nới rộng tờ giấy theo dữ liệu cũ
             UpdateCanvasSize();
             CanvasView.Invalidate();
         }
@@ -173,25 +249,16 @@ public partial class MainPage : ContentPage
     {
         try
         {
-            // Tạo tên file duy nhất theo thời gian để tránh ghi đè
             string fileName = $"drawing_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             string path = Path.Combine(FileSystem.AppDataDirectory, fileName);
 
-            // Khối using đảm bảo stream sẽ được đóng và giải phóng NGAY LẬP TỨC 
-            // sau khi thực hiện xong lệnh bên trong, kể cả khi có lỗi xảy ra.
             using (var stream = File.Create(path))
             {
                 ExportService.ExportToPng(stream, _painter.Shapes, CanvasView.Width, CanvasView.Height);
-
-                // Ép stream đẩy hết dữ liệu xuống ổ cứng trước khi đóng
                 await stream.FlushAsync();
             }
 
             await DisplayAlert("Thành công", $"Đã xuất ảnh: {fileName}", "OK");
-        }
-        catch (IOException ioEx)
-        {
-            await DisplayAlert("Lỗi truy cập file", "File đang bị mở bởi một ứng dụng khác hoặc chưa kịp đóng.", "OK");
         }
         catch (Exception ex)
         {
@@ -201,32 +268,55 @@ public partial class MainPage : ContentPage
 
     private void OnThicknessChanged(object sender, ValueChangedEventArgs e)
     {
-        if (_selectedShape != null) { _selectedShape.StrokeThickness = (float)e.NewValue; CanvasView.Invalidate(); }
+        if (_selectedShape != null)
+        {
+            _selectedShape.StrokeThickness = (float)e.NewValue;
+            CanvasView.Invalidate();
+        }
     }
 
     private void OnFillShape(object sender, EventArgs e)
     {
-        if (_selectedShape != null) { _selectedShape.FillColor = ColorPreview.Color; CanvasView.Invalidate(); }
+        if (_selectedShape != null)
+        {
+            SaveState();
+            _selectedShape.FillColor = ColorPreview.Color;
+            CanvasView.Invalidate();
+        }
+        else
+        {
+            DisplayAlert("Gợi ý", "Chọn vật thể bằng Select tool trước khi tô màu.", "OK");
+        }
     }
 
     private void OnUndo(object sender, EventArgs e)
     {
-        if (_undoStack.Count > 0) { _painter.Shapes = _undoStack.Last(); _undoStack.RemoveAt(_undoStack.Count - 1); _selectedShape = null; CanvasView.Invalidate(); }
+        if (_undoStack.Count > 0)
+        {
+            _painter.Shapes = _undoStack.Last();
+            _undoStack.RemoveAt(_undoStack.Count - 1);
+            _selectedShape = null;
+            CanvasView.Invalidate();
+        }
     }
 
     private void OnDelete(object sender, EventArgs e)
     {
-        if (_selectedShape != null) { SaveState(); _painter.Shapes.Remove(_selectedShape); _selectedShape = null; CanvasView.Invalidate(); }
+        if (_selectedShape != null)
+        {
+            SaveState();
+            _painter.Shapes.Remove(_selectedShape);
+            _selectedShape = null;
+            CanvasView.Invalidate();
+        }
     }
 
 #if WINDOWS
     private void PlatformView_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        // Lấy thông tin cuộn
         var prop = e.GetCurrentPoint(null).Properties;
         int delta = prop.MouseWheelDelta;
 
-        // Zoom (Ctrl + Wheel hoặc chỉ cần Wheel tùy bạn)
         if (delta > 0)
             _currentScale += 0.1;
         else
@@ -234,12 +324,12 @@ public partial class MainPage : ContentPage
 
         _currentScale = Math.Clamp(_currentScale, 0.5, 5.0);
         CanvasContainer.Scale = _currentScale;
+        UpdateCanvasSize();
 
-        e.Handled = true; // Chặn sự kiện cuộn trang web/app nếu có
+        e.Handled = true;
     }
 #endif
 
-    // ZOOM CHO MOBILE (PINCH)
     private void OnPinchUpdated(object sender, PinchGestureUpdatedEventArgs e)
     {
         if (e.Status == GestureStatus.Started) _startScale = _currentScale;
@@ -247,46 +337,93 @@ public partial class MainPage : ContentPage
         {
             _currentScale = Math.Clamp(_startScale * e.Scale, 0.5, 5.0);
             CanvasContainer.Scale = _currentScale;
-
-            // Khi Zoom, kích thước chiếm dụng trong ScrollView cũng thay đổi
             UpdateCanvasSize();
         }
     }
 
     private void UpdateCanvasSize()
     {
-        // Lấy kích thước vùng hiển thị hiện tại (cửa sổ app)
-        double minW = this.Width;
-        double minH = this.Height;
+        // Lấy kích thước của Grid chứa ScrollView (vùng trống thực tế trên màn hình)
+        // Nếu chưa render xong thì lấy size mặc định của thiết bị
+        double containerW = this.Width > 0 ? this.Width : DeviceDisplay.MainDisplayInfo.Width / DeviceDisplay.MainDisplayInfo.Density;
+        double containerH = this.Height > 0 ? this.Height : DeviceDisplay.MainDisplayInfo.Height / DeviceDisplay.MainDisplayInfo.Density;
 
-        // Nếu App vừa mở, Width/Height có thể chưa kịp render (-1)
-        if (minW <= 0) minW = DeviceDisplay.MainDisplayInfo.Width / DeviceDisplay.MainDisplayInfo.Density;
-        if (minH <= 0) minH = DeviceDisplay.MainDisplayInfo.Height / DeviceDisplay.MainDisplayInfo.Density;
+        // Trừ đi lề (Padding/Margin) đã set trong XAML (khoảng 40-60 đơn vị)
+        double minW = containerW - 40;
+        double minH = containerH - 150; // Trừ đi cả chiều cao toolbar
 
         if (_painter.Shapes.Count > 0)
         {
-            float maxX = _painter.Shapes.Max(s =>
-            {
-                var b = s.GetBounds();
-                return b.X + b.Width;
-            }) + 500;
-
-            float maxY = _painter.Shapes.Max(s =>
-            {
-                var b = s.GetBounds();
-                return b.Y + b.Height;
-            }) + 500;
+            float maxX = _painter.Shapes.Max(s => s.GetBounds().Right) + 100;
+            float maxY = _painter.Shapes.Max(s => s.GetBounds().Bottom) + 100;
 
             minW = Math.Max(minW, maxX);
             minH = Math.Max(minH, maxY);
         }
 
-        // Cập nhật kích thước vật lý cho "tờ giấy"
+        // Cập nhật kích thước
         CanvasView.WidthRequest = minW;
         CanvasView.HeightRequest = minH;
 
-        // Cập nhật kích thước chiếm dụng trong ScrollView (bao gồm cả Zoom)
         CanvasContainer.WidthRequest = minW * _currentScale;
         CanvasContainer.HeightRequest = minH * _currentScale;
+    }
+
+    // Hàm kiểm tra và nới rộng nhanh (Performance optimized)
+    private void EnsureCanvasSize(float targetX, float targetY)
+    {
+        bool needUpdate = false;
+        double currentW = CanvasView.WidthRequest;
+        double currentH = CanvasView.HeightRequest;
+
+        // Nếu tọa độ đang kéo vượt quá kích thước hiện tại + một khoảng đệm
+        if (targetX > currentW - 100)
+        {
+            currentW = targetX + 1000; // Nới rộng thêm 1000px để tránh gọi lại liên tục
+            needUpdate = true;
+        }
+        if (targetY > currentH - 100)
+        {
+            currentH = targetY + 1000;
+            needUpdate = true;
+        }
+
+        if (needUpdate)
+        {
+            CanvasView.WidthRequest = currentW;
+            CanvasView.HeightRequest = currentH;
+
+            // Cập nhật Container theo Scale để ScrollView hiện thanh cuộn đúng
+            CanvasContainer.WidthRequest = currentW * _currentScale;
+            CanvasContainer.HeightRequest = currentH * _currentScale;
+        }
+    }
+
+    private void OnCanvasDrag(object sender, TouchEventArgs e)
+    {
+        var currentPoint = e.Touches[0];
+
+        if (_isMoving && _selectedShape != null)
+        {
+            _selectedShape.X += currentPoint.X - _lastMousePos.X;
+            _selectedShape.Y += currentPoint.Y - _lastMousePos.Y;
+            _lastMousePos = currentPoint;
+
+            // Kiểm tra nới rộng khi di chuyển vật thể
+            EnsureCanvasSize(_selectedShape.X + Math.Abs(_selectedShape.Width),
+                             _selectedShape.Y + Math.Abs(_selectedShape.Height));
+        }
+        else if (_painter.CurrentPreviewShape != null)
+        {
+            _painter.CurrentPreviewShape.Width = currentPoint.X - _painter.CurrentPreviewShape.X;
+            _painter.CurrentPreviewShape.Height = currentPoint.Y - _painter.CurrentPreviewShape.Y;
+
+            if (_currentTool == MyShapeType.Square || _currentTool == MyShapeType.Circle)
+                _painter.CurrentPreviewShape.Height = _painter.CurrentPreviewShape.Width;
+
+            // Kiểm tra nới rộng khi đang vẽ hình mới
+            EnsureCanvasSize(currentPoint.X, currentPoint.Y);
+        }
+        CanvasView.Invalidate();
     }
 }

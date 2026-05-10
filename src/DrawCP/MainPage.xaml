@@ -5,78 +5,114 @@
              x:Class="DrawCP.MainPage"
              Title="Lucifer Drawing Pro">
 
-    <Grid RowDefinitions="Auto, *">
-        <!-- TOOLBAR: Full 4 nhóm công cụ -->
-        <ScrollView Grid.Row="0" Orientation="Horizontal" BackgroundColor="#E1E1E1" HorizontalScrollBarVisibility="Always">
-            <HorizontalStackLayout Padding="10" Spacing="10">
+    <ContentPage.Resources>
+        <!-- Màu sắc chủ đạo -->
+        <Color x:Key="PrimaryDark">#1A1A1B</Color>
+        <Color x:Key="AccentBlue">#007AFF</Color>
+        <Color x:Key="SurfaceLight">#FFFFFF</Color>
 
-                <!-- Nhóm 1: Hình cơ bản (Full 6 hình) -->
-                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
-                    <HorizontalStackLayout Spacing="3">
-                        <Button Text="Select" Clicked="OnToolSelected" CommandParameter="Point" WidthRequest="65" HeightRequest="40" FontSize="11" BackgroundColor="#2196F3"/>
-                        <Button Text="Line" Clicked="OnToolSelected" CommandParameter="Line" WidthRequest="55" HeightRequest="40" FontSize="11"/>
-                        <Button Text="Rect" Clicked="OnToolSelected" CommandParameter="Rectangle" WidthRequest="55" HeightRequest="40" FontSize="11"/>
-                        <Button Text="Square" Clicked="OnToolSelected" CommandParameter="Square" WidthRequest="65" HeightRequest="40" FontSize="11"/>
-                        <Button Text="Ellipse" Clicked="OnToolSelected" CommandParameter="Ellipse" WidthRequest="65" HeightRequest="40" FontSize="11"/>
-                        <Button Text="Circle" Clicked="OnToolSelected" CommandParameter="Circle" WidthRequest="60" HeightRequest="40" FontSize="11"/>
+        <!-- Style cho các nút công cụ -->
+        <Style x:Key="ToolBtn" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="Transparent"/>
+            <Setter Property="TextColor" Value="#333333"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontAttributes" Value="Bold"/>
+            <Setter Property="HeightRequest" Value="40"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Setter Property="Visual" Value="Default"/>
+        </Style>
+
+        <!-- Border cho các nhóm Tool -->
+        <Style x:Key="GroupBorder" TargetType="Border">
+            <Setter Property="Stroke" Value="#E0E0E0"/>
+            <Setter Property="StrokeThickness" Value="1"/>
+            <Setter Property="BackgroundColor" Value="White"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="StrokeShape" Value="RoundRectangle 12"/>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="Black" Offset="0,2" Radius="5" Opacity="0.05" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto, *" BackgroundColor="#F5F5F7">
+
+        <Border Grid.Row="0" Margin="10" Style="{StaticResource GroupBorder}">
+            <ScrollView Orientation="Vertical">
+                <FlexLayout Wrap="Wrap" 
+                        JustifyContent="Start" 
+                        AlignItems="Center" 
+                        Direction="Row">
+
+                    <HorizontalStackLayout Spacing="2" Margin="5">
+                        <Button Text="Select" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Select" WidthRequest="60"/>
+                        <Button Text="Point" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Point" WidthRequest="55"/>
+                        <Button Text="Line" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Line" WidthRequest="50"/>
+                        <Button Text="Rect" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Rectangle" WidthRequest="50"/>
+                        <Button Text="Square" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Square" WidthRequest="60"/>
+                        <Button Text="Ellipse" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Ellipse" WidthRequest="60"/>
+                        <Button Text="Circle" Style="{StaticResource ToolBtn}" Clicked="OnToolSelected" CommandParameter="Circle" WidthRequest="55"/>
                     </HorizontalStackLayout>
-                </Border>
 
-                <!-- Nhóm 2: Chỉnh sửa -->
-                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
-                    <HorizontalStackLayout Spacing="3">
-                        <Button Text="Fill" Clicked="OnFillShape" WidthRequest="55" HeightRequest="40" FontSize="11" BackgroundColor="#FF9800"/>
-                        <Button Text="Undo" Clicked="OnUndo" WidthRequest="55" HeightRequest="40" FontSize="11" BackgroundColor="#607D8B"/>
-                        <Button Text="Del" Clicked="OnDelete" WidthRequest="50" HeightRequest="40" FontSize="11" BackgroundColor="#F44336"/>
+                    <BoxView WidthRequest="1" HeightRequest="30" BackgroundColor="#D1D1D6" Margin="5"/>
+
+                    <HorizontalStackLayout Spacing="2" Margin="5">
+                        <Button Text="Fill" Style="{StaticResource ToolBtn}" Clicked="OnFillShape" TextColor="#FF9500" WidthRequest="45"/>
+                        <Button Text="Undo" Style="{StaticResource ToolBtn}" Clicked="OnUndo" TextColor="#5856D6" WidthRequest="55"/>
+                        <Button Text="Del" Style="{StaticResource ToolBtn}" Clicked="OnDelete" TextColor="#FF3B30" WidthRequest="45"/>
                     </HorizontalStackLayout>
-                </Border>
 
-                <!-- Nhóm 3: Thuộc tính -->
-                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
-                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                        <Label Text="Size:" VerticalOptions="Center" FontSize="12"/>
-                        <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" WidthRequest="100" ValueChanged="OnThicknessChanged"/>
-                        <BoxView x:Name="ColorPreview" Color="Black" WidthRequest="30" HeightRequest="30" CornerRadius="15">
-                            <BoxView.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnColorPickerTapped"/>
-                            </BoxView.GestureRecognizers>
-                        </BoxView>
+                    <BoxView WidthRequest="1" HeightRequest="30" BackgroundColor="#D1D1D6" Margin="5"/>
+
+                    <HorizontalStackLayout Spacing="5" Margin="5">
+                        <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" WidthRequest="80"/>
+                        <Border StrokeShape="RoundRectangle 15" HeightRequest="30" WidthRequest="30">
+                            <BoxView x:Name="ColorPreview" Color="Black">
+                                <BoxView.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnColorPickerTapped"/>
+                                </BoxView.GestureRecognizers>
+                            </BoxView>
+                        </Border>
                     </HorizontalStackLayout>
-                </Border>
 
-                <!-- Nhóm 4: File -->
-                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
-                    <HorizontalStackLayout Spacing="3">
-                        <Button Text="Import" Clicked="OnLoadBinary" WidthRequest="65" HeightRequest="40" FontSize="11" BackgroundColor="#9E9E9E"/>
-                        <Button Text="Save Bin" Clicked="OnSaveBinary" WidthRequest="75" HeightRequest="40" FontSize="11" BackgroundColor="#4CAF50"/>
-                        <Button Text="Export PNG" Clicked="OnExportImage" WidthRequest="85" HeightRequest="40" FontSize="11" BackgroundColor="#3F51B5"/>
+                    <BoxView WidthRequest="1" HeightRequest="30" BackgroundColor="#D1D1D6" Margin="5"/>
+
+                    <HorizontalStackLayout Spacing="2" Margin="5">
+                        <Button Text="In" Style="{StaticResource ToolBtn}" Clicked="OnLoadBinary" WidthRequest="40"/>
+                        <Button Text="Save" Style="{StaticResource ToolBtn}" Clicked="OnSaveBinary" BackgroundColor="#34C759" TextColor="White" WidthRequest="55"/>
+                        <Button Text="PNG" Style="{StaticResource ToolBtn}" Clicked="OnExportImage" BackgroundColor="{StaticResource PrimaryDark}" TextColor="White" WidthRequest="55"/>
                     </HorizontalStackLayout>
+
+                </FlexLayout>
+            </ScrollView>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="10">
+            <ScrollView Orientation="Both">
+                <Border StrokeThickness="0" BackgroundColor="White">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,5" Radius="10" Opacity="0.1" />
+                    </Border.Shadow>
+
+                    <ContentView x:Name="CanvasContainer" 
+                             HorizontalOptions="Fill" 
+                             VerticalOptions="Fill">
+                        <ContentView.GestureRecognizers>
+                            <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
+                        </ContentView.GestureRecognizers>
+
+                        <GraphicsView x:Name="CanvasView" 
+                                  BackgroundColor="White"
+                                  HorizontalOptions="Fill"
+                                  VerticalOptions="Fill"
+                                  StartInteraction="OnCanvasStart"
+                                  DragInteraction="OnCanvasDrag"
+                                  EndInteraction="OnCanvasEnd"/>
+                    </ContentView>
                 </Border>
-            </HorizontalStackLayout>
-        </ScrollView>
-
-        <!-- VÙNG VẼ: Hỗ trợ Zoom & Pan mượt mà -->
-        <Grid Grid.Row="1" BackgroundColor="#CCCCCC">
-            <ScrollView Orientation="Both" 
-                HorizontalScrollBarVisibility="Always" 
-                VerticalScrollBarVisibility="Always">
-
-                <!-- Để Width/Height tự nhiên, ta sẽ quản lý qua code-behind -->
-                <ContentView x:Name="CanvasContainer" 
-                     HorizontalOptions="Start" 
-                     VerticalOptions="Start"
-                     AnchorX="0" 
-                     AnchorY="0">
-                    <ContentView.GestureRecognizers>
-                        <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
-                    </ContentView.GestureRecognizers>
-
-                    <GraphicsView x:Name="CanvasView"
-                          StartInteraction="OnCanvasStart"
-                          DragInteraction="OnCanvasDrag"
-                          EndInteraction="OnCanvasEnd"
-                          BackgroundColor="White"/>
-                </ContentView>
             </ScrollView>
         </Grid>
     </Grid>
