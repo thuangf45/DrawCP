@@ -10,7 +10,7 @@ public class ShapeModel
     public float Width { get; set; }
     public float Height { get; set; }
     public Color StrokeColor { get; set; } = Colors.Black;
-    public Color FillColor { get; set; } = Colors.Transparent;
+    public Color FillColor { get; set; } = Colors.Transparent; // Đảm bảo mặc định là trong suốt
     public float StrokeThickness { get; set; } = 2;
     public bool IsSelected { get; set; }
 

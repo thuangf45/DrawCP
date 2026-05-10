@@ -6,12 +6,12 @@
              Title="Lucifer Drawing Pro">
 
     <Grid RowDefinitions="Auto, *">
-        <!-- TOOLBAR: Khu vực điều khiển -->
-        <ScrollView Grid.Row="0" BackgroundColor="#E1E1E1" VerticalScrollBarVisibility="Never">
-            <FlexLayout Wrap="Wrap" Padding="5" JustifyContent="Start" AlignItems="Center">
+        <!-- TOOLBAR: Full 4 nhóm công cụ -->
+        <ScrollView Grid.Row="0" Orientation="Horizontal" BackgroundColor="#E1E1E1" HorizontalScrollBarVisibility="Always">
+            <HorizontalStackLayout Padding="10" Spacing="10">
 
-                <!-- Nhóm 1: Chọn công cụ (Tools) -->
-                <Frame Margin="2" Padding="5" CornerRadius="5" BackgroundColor="White">
+                <!-- Nhóm 1: Hình cơ bản (Full 6 hình) -->
+                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
                     <HorizontalStackLayout Spacing="3">
                         <Button Text="Select" Clicked="OnToolSelected" CommandParameter="Point" WidthRequest="65" HeightRequest="40" FontSize="11" BackgroundColor="#2196F3"/>
                         <Button Text="Line" Clicked="OnToolSelected" CommandParameter="Line" WidthRequest="55" HeightRequest="40" FontSize="11"/>
@@ -20,46 +20,64 @@
                         <Button Text="Ellipse" Clicked="OnToolSelected" CommandParameter="Ellipse" WidthRequest="65" HeightRequest="40" FontSize="11"/>
                         <Button Text="Circle" Clicked="OnToolSelected" CommandParameter="Circle" WidthRequest="60" HeightRequest="40" FontSize="11"/>
                     </HorizontalStackLayout>
-                </Frame>
+                </Border>
 
-                <!-- Nhóm 2: Chỉnh sửa (Edit) -->
-                <Frame Margin="2" Padding="5" CornerRadius="5" BackgroundColor="White">
+                <!-- Nhóm 2: Chỉnh sửa -->
+                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
                     <HorizontalStackLayout Spacing="3">
                         <Button Text="Fill" Clicked="OnFillShape" WidthRequest="55" HeightRequest="40" FontSize="11" BackgroundColor="#FF9800"/>
                         <Button Text="Undo" Clicked="OnUndo" WidthRequest="55" HeightRequest="40" FontSize="11" BackgroundColor="#607D8B"/>
                         <Button Text="Del" Clicked="OnDelete" WidthRequest="50" HeightRequest="40" FontSize="11" BackgroundColor="#F44336"/>
                     </HorizontalStackLayout>
-                </Frame>
+                </Border>
 
-                <!-- Nhóm 3: Thuộc tính (Properties) -->
-                <Frame Margin="2" Padding="5" CornerRadius="5" BackgroundColor="White">
+                <!-- Nhóm 3: Thuộc tính -->
+                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
                     <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                         <Label Text="Size:" VerticalOptions="Center" FontSize="12"/>
-                        <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" WidthRequest="80" ValueChanged="OnThicknessChanged"/>
+                        <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Value="2" WidthRequest="100" ValueChanged="OnThicknessChanged"/>
                         <BoxView x:Name="ColorPreview" Color="Black" WidthRequest="30" HeightRequest="30" CornerRadius="15">
                             <BoxView.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnColorPickerTapped"/>
                             </BoxView.GestureRecognizers>
                         </BoxView>
                     </HorizontalStackLayout>
-                </Frame>
+                </Border>
 
-                <!-- Nhóm 4: Lưu trữ (File) -->
-                <Frame Margin="2" Padding="5" CornerRadius="5" BackgroundColor="White">
+                <!-- Nhóm 4: File -->
+                <Border StrokeShape="RoundRectangle 8" Padding="5" BackgroundColor="White">
                     <HorizontalStackLayout Spacing="3">
                         <Button Text="Import" Clicked="OnLoadBinary" WidthRequest="65" HeightRequest="40" FontSize="11" BackgroundColor="#9E9E9E"/>
                         <Button Text="Save Bin" Clicked="OnSaveBinary" WidthRequest="75" HeightRequest="40" FontSize="11" BackgroundColor="#4CAF50"/>
                         <Button Text="Export PNG" Clicked="OnExportImage" WidthRequest="85" HeightRequest="40" FontSize="11" BackgroundColor="#3F51B5"/>
                     </HorizontalStackLayout>
-                </Frame>
-            </FlexLayout>
+                </Border>
+            </HorizontalStackLayout>
         </ScrollView>
 
-        <!-- Vùng vẽ -->
-        <GraphicsView Grid.Row="1" x:Name="CanvasView"
-                      StartInteraction="OnCanvasStart"
-                      DragInteraction="OnCanvasDrag"
-                      EndInteraction="OnCanvasEnd"
-                      BackgroundColor="White"/>
+        <!-- VÙNG VẼ: Hỗ trợ Zoom & Pan mượt mà -->
+        <Grid Grid.Row="1" BackgroundColor="#CCCCCC">
+            <ScrollView Orientation="Both" 
+                HorizontalScrollBarVisibility="Always" 
+                VerticalScrollBarVisibility="Always">
+
+                <!-- Để Width/Height tự nhiên, ta sẽ quản lý qua code-behind -->
+                <ContentView x:Name="CanvasContainer" 
+                     HorizontalOptions="Start" 
+                     VerticalOptions="Start"
+                     AnchorX="0" 
+                     AnchorY="0">
+                    <ContentView.GestureRecognizers>
+                        <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
+                    </ContentView.GestureRecognizers>
+
+                    <GraphicsView x:Name="CanvasView"
+                          StartInteraction="OnCanvasStart"
+                          DragInteraction="OnCanvasDrag"
+                          EndInteraction="OnCanvasEnd"
+                          BackgroundColor="White"/>
+                </ContentView>
+            </ScrollView>
+        </Grid>
     </Grid>
 </ContentPage>
