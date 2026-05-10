@@ -89,31 +89,22 @@
                 </FlexLayout>
             </ScrollView>
         </Border>
+        <Grid Grid.Row="1" Margin="10" BackgroundColor="White" IsClippedToBounds="True">
+            <ContentView x:Name="CanvasContainer" 
+                 HorizontalOptions="Start" 
+                 VerticalOptions="Start"
+                 AnchorX="0" 
+                 AnchorY="0">
+                <ContentView.GestureRecognizers>
+                    <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
+                </ContentView.GestureRecognizers>
 
-        <Grid Grid.Row="1" Margin="10">
-            <ScrollView Orientation="Both">
-                <Border StrokeThickness="0" BackgroundColor="White">
-                    <Border.Shadow>
-                        <Shadow Brush="Black" Offset="0,5" Radius="10" Opacity="0.1" />
-                    </Border.Shadow>
-
-                    <ContentView x:Name="CanvasContainer" 
-                             HorizontalOptions="Fill" 
-                             VerticalOptions="Fill">
-                        <ContentView.GestureRecognizers>
-                            <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
-                        </ContentView.GestureRecognizers>
-
-                        <GraphicsView x:Name="CanvasView" 
-                                  BackgroundColor="White"
-                                  HorizontalOptions="Fill"
-                                  VerticalOptions="Fill"
-                                  StartInteraction="OnCanvasStart"
-                                  DragInteraction="OnCanvasDrag"
-                                  EndInteraction="OnCanvasEnd"/>
-                    </ContentView>
-                </Border>
-            </ScrollView>
+                <GraphicsView x:Name="CanvasView" 
+                      BackgroundColor="White"
+                      StartInteraction="OnCanvasStart"
+                      DragInteraction="OnCanvasDrag"
+                      EndInteraction="OnCanvasEnd"/>
+            </ContentView>
         </Grid>
     </Grid>
 </ContentPage>

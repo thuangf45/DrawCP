@@ -401,29 +401,42 @@ public partial class MainPage : ContentPage
 
     private void OnCanvasDrag(object sender, TouchEventArgs e)
     {
-        var currentPoint = e.Touches[0];
+        if (e.Touches.Length == 0) return;
+        var rawPoint = e.Touches[0];
 
-        if (_isMoving && _selectedShape != null)
+        // Tọa độ đã tính toán theo tỉ lệ Zoom
+        float curX = (float)(rawPoint.X / _currentScale);
+        float curY = (float)(rawPoint.Y / _currentScale);
+        float lastX = (float)(_lastMousePos.X / _currentScale);
+        float lastY = (float)(_lastMousePos.Y / _currentScale);
+
+        if (_currentTool == MyShapeType.Select)
         {
-            _selectedShape.X += currentPoint.X - _lastMousePos.X;
-            _selectedShape.Y += currentPoint.Y - _lastMousePos.Y;
-            _lastMousePos = currentPoint;
-
-            // Kiểm tra nới rộng khi di chuyển vật thể
-            EnsureCanvasSize(_selectedShape.X + Math.Abs(_selectedShape.Width),
-                             _selectedShape.Y + Math.Abs(_selectedShape.Height));
+            if (_isMoving && _selectedShape != null)
+            {
+                // 1. Di chuyển vật thể
+                _selectedShape.X += curX - lastX;
+                _selectedShape.Y += curY - lastY;
+            }
+            else if (_selectedShape == null)
+            {
+                // 2. PANNING: Di chuyển toàn bộ tờ giấy (Thay thế thanh cuộn)
+                // Lưu ý: Panning dùng tọa độ raw để mượt hơn
+                CanvasContainer.TranslationX += (rawPoint.X - _lastMousePos.X);
+                CanvasContainer.TranslationY += (rawPoint.Y - _lastMousePos.Y);
+            }
         }
         else if (_painter.CurrentPreviewShape != null)
         {
-            _painter.CurrentPreviewShape.Width = currentPoint.X - _painter.CurrentPreviewShape.X;
-            _painter.CurrentPreviewShape.Height = currentPoint.Y - _painter.CurrentPreviewShape.Y;
+            // 3. VẼ HÌNH: Cực kỳ mượt vì không còn ScrollView tranh chấp
+            _painter.CurrentPreviewShape.Width = curX - _painter.CurrentPreviewShape.X;
+            _painter.CurrentPreviewShape.Height = curY - _painter.CurrentPreviewShape.Y;
 
             if (_currentTool == MyShapeType.Square || _currentTool == MyShapeType.Circle)
                 _painter.CurrentPreviewShape.Height = _painter.CurrentPreviewShape.Width;
-
-            // Kiểm tra nới rộng khi đang vẽ hình mới
-            EnsureCanvasSize(currentPoint.X, currentPoint.Y);
         }
+
+        _lastMousePos = rawPoint;
         CanvasView.Invalidate();
     }
 }
