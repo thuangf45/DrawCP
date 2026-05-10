@@ -5,16 +5,22 @@ namespace DrawCP.Graphics;
 public class SimplePainter : IDrawable
 {
     public List<ShapeModel> Shapes { get; set; } = new();
-    public ShapeModel CurrentPreviewShape { get; set; }
+    // Thêm dấu ? để tương thích .NET 9 Nullable Check
+    public ShapeModel? CurrentPreviewShape { get; set; }
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
+        // Vẽ các hình chính thức
         foreach (var shape in Shapes)
         {
             DrawShape(canvas, shape);
-            if (shape.IsSelected) DrawSelectionHighlight(canvas, shape);
         }
 
+        // Vẽ Highlight cho hình đang được chọn (Vẽ sau cùng để luôn nằm trên)
+        var selected = Shapes.LastOrDefault(s => s.IsSelected);
+        if (selected != null) DrawSelectionHighlight(canvas, selected);
+
+        // Vẽ hình nháp (Preview)
         if (CurrentPreviewShape != null)
         {
             canvas.Alpha = 0.5f;
@@ -56,11 +62,9 @@ public class SimplePainter : IDrawable
         canvas.StrokeColor = Colors.DeepSkyBlue;
         canvas.StrokeSize = 2;
         canvas.StrokeDashPattern = new float[] { 4, 4 };
-
         var rect = shape.GetBounds();
-        // Thay thế Inset(-2, -2) bằng cách tạo Rect mới rộng hơn một chút
+        // Mở rộng vùng bao 2 đơn vị để không đè lên hình
         var highlightRect = new RectF(rect.X - 2, rect.Y - 2, rect.Width + 4, rect.Height + 4);
-
         canvas.DrawRectangle(highlightRect);
     }
 }
