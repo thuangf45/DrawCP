@@ -11,7 +11,7 @@
 ---
 
 ## 2. Video Demo chức năng
-* **Link Video (YouTube Unlisted):** [Dán đường link YouTube của bạn vào đây]
+* **Link Video (YouTube Unlisted):** https://youtu.be/CDSBf_oPTuM
 * **Ghi chú:** Video thể hiện ứng dụng chạy đồng thời trên môi trường **Windows Desktop** và **Android Mobile**.
 
 ---
